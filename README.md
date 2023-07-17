@@ -4,7 +4,7 @@
 
  ## How to run it?
 
-- Please remove the commented out lines at 129, 130 and 131 from file policy_ocr.rb
+- Please remove the commented out lines at 105, 106 and 107 from file policy_ocr.rb
 - in terminal run command `ruby lib/policy_ocr.rb`
 
 ## How to run test cases?
