@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../constants/constants'
+
 module PolicyOcr
   class ScanOcr
     def extract_number(file_path)
@@ -9,20 +11,6 @@ module PolicyOcr
     end
 
     def parse_text(file_path)
-      digit_mapping = {
-        ' _ | ||_|' => '0',
-        '     |  |' => '1',
-        ' _  _||_ ' => '2',
-        ' _  _| _|' => '3',
-        '   |_|  |' => '4',
-        ' _ |_  _|' => '5',
-        ' _ |_ |_|' => '6',
-        ' _   |  |' => '7',
-        ' _ |_||_|' => '8',
-        ' _ |_| _|' => '9'
-      }
-
-      digit_size = 3
       digits = []
       extracted_number = []
 
@@ -32,8 +20,8 @@ module PolicyOcr
           lines[0].each_char.with_index do |_, obj|
             next if obj % 3 != 0
 
-            digit = lines[0][obj, digit_size] + lines[1][obj, digit_size] + lines[2][obj, digit_size]
-            digits << (digit_mapping[digit].nil? ? '?' : digit_mapping[digit])
+            digit = lines[0][obj, DIGIT_SIZE] + lines[1][obj, DIGIT_SIZE] + lines[2][obj, DIGIT_SIZE]
+            digits << (DIGIT_MAPPING[digit].nil? ? '?' : DIGIT_MAPPING[digit])
           end
           number = digits.join('').chop
           digits.clear
@@ -44,9 +32,40 @@ module PolicyOcr
     end
 
     def write_parsed_numbers(extracted_number)
-      File.open('./spec/fixtures/parsed_numbers.txt', 'w') do |file|
+      File.open(PARSED_NUMBER_FILE, 'w') do |file|
         extracted_number.each do |number|
           file.write("#{number} \n")
+        end
+      end
+    end
+
+    def permute_numbers(file_path)
+      valid_checksum_numbers = []
+
+      extracted_numbers = extract_number(file_path)
+
+      extracted_numbers.each do |number|
+        next if valid_checksum?(number)
+
+        dup_num = number.dup
+        number.chars.each_with_index do |char ,index|
+          possible_numbers = NUMBERS_MAPPING[char]
+          possible_numbers&.each do |num|
+            modified_num = dup_num.chars
+            modified_num[index] = num
+            modified_num = modified_num.join
+
+            valid_checksum_numbers << modified_num if valid_checksum?(modified_num) && legal_number?(modified_num)
+          end
+        end
+      end
+      write_valid_checksum_numbers(valid_checksum_numbers)
+    end
+
+    def write_valid_checksum_numbers(valid_checksum_numbers)
+      File.open(VALID_CHECKSUM_FILE, 'w') do |file|
+        valid_checksum_numbers.each do |number|
+          file.write("#{number} #{evaluate_number_tag(number)} \n")
         end
       end
     end
@@ -54,7 +73,7 @@ module PolicyOcr
     def write_findings(file_path)
       extracted_number = extract_number(file_path)
 
-      File.open('./spec/fixtures/findings.txt', 'w') do |file|
+      File.open(FINDINGS_FILE, 'w') do |file|
         extracted_number.each do |number|
           file.write("#{number} #{evaluate_number_tag(number)} \n")
         end
@@ -83,6 +102,7 @@ module PolicyOcr
       (checksum % 11).zero?
     end
   end
-  # ScanOcr.new.extract_number('./spec/fixtures/sample.txt')
+  # ScanOcr.new.extract_number(SAMPLE_FILE)  # user story 1
+  # ScanOcr.new.write_findings(INVALID_NUMBERS_FILE) # user story 2 and 3
+  # ScanOcr.new.permute_numbers(INVALID_NUMBERS_FILE)  # user story 4
 end
-  

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../lib/policy_ocr'
+require_relative '../constants/constants'
 
 RSpec.describe PolicyOcr::ScanOcr do
   let(:scan) { PolicyOcr::ScanOcr.new }
@@ -18,12 +19,12 @@ RSpec.describe PolicyOcr::ScanOcr do
   end
 
   it 'checks the single number' do
-    extracted_number = scan.extract_number('./spec/fixtures/single_number.txt').first.to_i
+    extracted_number = scan.extract_number(SINGLE_NUMBER_FILE).first.to_i
     expect(extracted_number).to eq(123456789)
   end
 
   it 'checks multiple numbers' do
-    extracted_number = scan.extract_number('./spec/fixtures/multiple_numbers.txt')
+    extracted_number = scan.extract_number(MULTIPLE_NUMBERS_FILE)
     valid_numbers = extracted_number.all? { |number| number.chars.map(&:to_i).join('').eql?(number) }
     expect(valid_numbers).to eq(true)
   end
@@ -45,6 +46,10 @@ RSpec.describe PolicyOcr::ScanOcr do
   end
 
   it 'write findings' do
-    scan.write_findings('./spec/fixtures/invalid_numbers.txt')
+    scan.write_findings(INVALID_NUMBERS_FILE)
+  end
+
+  it 'write valid checksum numbers' do
+    scan.permute_numbers(INVALID_NUMBERS_FILE)
   end
 end
